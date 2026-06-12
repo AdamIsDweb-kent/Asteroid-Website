@@ -50,6 +50,7 @@
     <div id="filter-tabs">
         <button class="ftab active" data-filter="all">All</button>
         <button class="ftab" data-filter="planet">Planets</button>
+        <button class="ftab" data-filter="moon">Moons</button>
         <button class="ftab" data-filter="neo">NEOs</button>
         <button class="ftab" data-filter="pha">⚠ PHAs</button>
         <button class="ftab" data-filter="comet">Comets</button>
@@ -87,11 +88,13 @@
 </div>
 
 <footer id="legend">
-    <span><i class="dot dot-planet"></i>Planet</span>
-    <span><i class="dot dot-neo"></i>Near-Earth asteroid</span>
-    <span><i class="dot dot-pha"></i>Potentially hazardous</span>
-    <span><i class="dot dot-comet"></i>Comet</span>
-    <span class="credit">Data: NASA NeoWs / JPL · positions propagated live</span>
+    <button class="leg-toggle" data-cat="planet" title="Show / hide planets"><i class="dot dot-planet"></i>Planets</button>
+    <button class="leg-toggle" data-cat="moon" title="Show / hide moons"><i class="dot dot-moon"></i>Moons</button>
+    <button class="leg-toggle" data-cat="ast" title="Show / hide asteroids"><i class="dot dot-neo"></i>Asteroids</button>
+    <button class="leg-toggle" data-cat="pha" title="Show / hide potentially hazardous asteroids"><i class="dot dot-pha"></i>PHAs</button>
+    <button class="leg-toggle" data-cat="comet" title="Show / hide comets"><i class="dot dot-comet"></i>Comets</button>
+    <button class="leg-toggle" data-cat="grid" title="Show / hide AU distance rings"><i class="dot dot-grid"></i>AU grid</button>
+    <span class="credit">Data: NASA NeoWs / JPL · positions propagated live · click chips to toggle</span>
 </footer>
 
 <div id="tooltip"></div>

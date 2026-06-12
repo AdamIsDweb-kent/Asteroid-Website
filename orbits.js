@@ -24,6 +24,27 @@ window.ORBITS = (function () {
         { name: 'Pluto',   color: '#c9b29b', size: 2.6, el: [39.48211675, -0.00031596, 0.24882730, 0.00005170, 17.14001206, 0.00004818, 238.92903833, 145.20780515, 224.06891629, -0.04062942, 110.30393684, -0.01183482] }
     ];
 
+    /* Major moons — osculating elements relative to their parent planet,
+       heliocentric-ecliptic frame, from JPL Horizons at epoch 2026-06-12.
+       a in AU, angles in degrees, per in days. Same record shape as small
+       bodies, so smallBodyPos() propagates them (around the parent). */
+    const MOONS = [
+        { name: 'Moon',      parent: 'Earth',   color: '#c9c9c9', size: 0.27, a: 0.00256923, e: 0.072055, i: 5.0327, om: 332.2633, w: 113.3916, ma: 326.9182, epoch: 2461204.25, per: 27.279353 },
+        { name: 'Phobos',    parent: 'Mars',    color: '#9a8a7a', size: 0.08, a: 0.00006269, e: 0.015251, i: 26.1714, om: 80.7530, w: 231.4443, ma: 59.4039, epoch: 2461204.25, per: 0.319144 },
+        { name: 'Deimos',    parent: 'Mars',    color: '#8a7d6e', size: 0.06, a: 0.00015681, e: 0.000267, i: 24.1212, om: 81.3482, w: 19.6240, ma: 289.5507, epoch: 2461204.25, per: 1.262583 },
+        { name: 'Io',        parent: 'Jupiter', color: '#e8d44f', size: 0.12, a: 0.00282103, e: 0.003724, i: 2.2199, om: 338.4880, w: 118.0497, ma: 232.3616, epoch: 2461204.25, per: 1.771297 },
+        { name: 'Europa',    parent: 'Jupiter', color: '#d8c9a8', size: 0.10, a: 0.00448691, e: 0.009624, i: 2.1059, om: 326.0052, w: 317.7908, ma: 292.6749, epoch: 2461204.25, per: 3.553077 },
+        { name: 'Ganymede',  parent: 'Jupiter', color: '#a89a8a', size: 0.15, a: 0.00715736, e: 0.001577, i: 2.3420, om: 339.1389, w: 12.9791, ma: 258.2542, epoch: 2461204.25, per: 7.158167 },
+        { name: 'Callisto',  parent: 'Jupiter', color: '#8a7f72', size: 0.14, a: 0.01258822, e: 0.007432, i: 1.9524, om: 336.7197, w: 31.7542, ma: 351.0620, epoch: 2461204.25, per: 16.696408 },
+        { name: 'Enceladus', parent: 'Saturn',  color: '#e8eef5', size: 0.06, a: 0.00159366, e: 0.003576, i: 28.0456, om: 169.5177, w: 171.9828, ma: 123.0817, epoch: 2461204.25, per: 1.374513 },
+        { name: 'Rhea',      parent: 'Saturn',  color: '#b8b4ac', size: 0.09, a: 0.00352440, e: 0.001059, i: 28.2613, om: 169.9976, w: 144.3055, ma: 293.5654, epoch: 2461204.25, per: 4.520453 },
+        { name: 'Titan',     parent: 'Saturn',  color: '#e0b35f', size: 0.16, a: 0.00816812, e: 0.028767, i: 27.7072, om: 169.0794, w: 178.3229, ma: 66.3302, epoch: 2461204.25, per: 15.947329 },
+        { name: 'Miranda',   parent: 'Uranus',  color: '#9aa6b2', size: 0.07, a: 0.00086815, e: 0.001216, i: 98.5122, om: 163.2478, w: 59.1433, ma: 144.5348, epoch: 2461204.25, per: 1.414026 },
+        { name: 'Titania',   parent: 'Uranus',  color: '#a8b0c0', size: 0.09, a: 0.00291633, e: 0.002382, i: 97.7626, om: 167.6430, w: 261.1215, ma: 199.0715, epoch: 2461204.25, per: 8.705898 },
+        { name: 'Triton',    parent: 'Neptune', color: '#cfe8ec', size: 0.22, a: 0.00237146, e: 0.000032, i: 129.1294, om: 222.7736, w: 287.7235, ma: 11.6590, epoch: 2461204.25, per: 5.877062 },
+        { name: 'Charon',    parent: 'Pluto',   color: '#b0a89a', size: 0.50, a: 0.00013099, e: 0.000161, i: 112.8878, om: 227.3930, w: 172.6738, ma: 248.3507, epoch: 2461204.25, per: 6.387219 }
+    ];
+
     function jdFromMs(ms) {
         return ms / 86400000 + 2440587.5;
     }
@@ -121,6 +142,7 @@ window.ORBITS = (function () {
     return {
         J2000: J2000,
         PLANETS: PLANETS,
+        MOONS: MOONS,
         jdFromMs: jdFromMs,
         planetElements: planetElements,
         planetPos: planetPos,

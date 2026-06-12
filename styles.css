@@ -505,6 +505,36 @@ html, body {
 #legend span { display: flex; align-items: center; gap: 6px; }
 #legend .credit { opacity: 0.65; }
 
+.leg-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(110, 231, 255, 0.05);
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.leg-toggle:hover {
+    color: var(--text);
+    border-color: rgba(110, 231, 255, 0.4);
+}
+
+.leg-toggle.off {
+    opacity: 0.38;
+    text-decoration: line-through;
+}
+
+.leg-toggle.off .dot { box-shadow: none; opacity: 0.4; }
+
+.dot-moon { background: #c9c9c9; box-shadow: 0 0 6px #c9c9c9; }
+.dot-grid { background: transparent; border: 1px solid var(--accent); box-shadow: 0 0 6px rgba(110,231,255,0.5); }
+
 .dot-planet { background: var(--planet); box-shadow: 0 0 6px var(--planet); }
 .dot-neo { background: var(--neo); box-shadow: 0 0 6px var(--neo); }
 .dot-pha { background: var(--pha); box-shadow: 0 0 6px var(--pha); }
@@ -576,6 +606,12 @@ html, body {
 .sel-label {
     color: var(--accent);
     text-shadow: 0 0 8px rgba(110, 231, 255, 0.6), 0 0 6px rgba(0, 0, 0, 0.9);
+}
+
+.moon-label {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: rgba(220, 232, 255, 0.6);
 }
 
 .ring-label {

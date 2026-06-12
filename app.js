@@ -28,16 +28,20 @@ const AU_LD = 389.17;
 const COLORS = { neo: '#ffb347', pha: '#ff5d6c', comet: '#7ee8fa', ast: '#c8a76a', accent: '#6ee7ff' };
 const RING_RADII = [1, 2, 5, 10, 20, 30];
 // exaggerated display radii (world units = AU); real planets would be invisible
-const PLANET_RADII = { Mercury: 0.009, Venus: 0.016, Earth: 0.017, Mars: 0.012, Jupiter: 0.05, Saturn: 0.042, Uranus: 0.03, Neptune: 0.029, Pluto: 0.007 };
+const PLANET_RADII = { Mercury: 0.006, Venus: 0.009, Earth: 0.0095, Mars: 0.006, Jupiter: 0.016, Saturn: 0.013, Uranus: 0.011, Neptune: 0.011, Pluto: 0.004 };
 
 // ---------- state ----------
 const time = { mode: 'live', rate: 0, simMs: Date.now() };
 let planets = [];
+let moons = [];
 let bodies = [];
+let pointBodies = [];                 // asteroids currently shown in the point cloud
 let cadRows = [];
 let selected = null, hovered = null, following = false;
 let filterMode = 'all';
 let W = window.innerWidth, H = window.innerHeight;
+// category visibility (legend toggles)
+const vis = { planet: true, moon: true, ast: true, pha: true, comet: true, grid: true };
 
 // =====================================================================
 // three.js scene
@@ -139,6 +143,7 @@ const texRing = ringTexture();
 })();
 
 // ---------- AU reference rings ----------
+const gridObjects = [];
 (function makeAuRings() {
     for (const r of RING_RADII) {
         const pts = [];
@@ -151,6 +156,7 @@ const texRing = ringTexture();
             new THREE.LineBasicMaterial({ color: 0x6ee7ff, transparent: true, opacity: 0.055 })
         );
         scene.add(line);
+        gridObjects.push(line);
 
         const div = document.createElement('div');
         div.className = 'ring-label';
@@ -158,6 +164,7 @@ const texRing = ringTexture();
         const lbl = new CSS2DObject(div);
         lbl.position.set(r * 0.7071, 0, -r * 0.7071);
         scene.add(lbl);
+        gridObjects.push(lbl);
     }
 })();
 
@@ -214,8 +221,59 @@ planets = O.PLANETS.map(p => {
     return {
         kind: 'planet', name: p.name, color: p.color, ref: p,
         neo: false, pha: false, cls: '', _key: 'pl-' + p.name,
-        group: group, glow: glow, radius: radius
+        group: group, glow: glow, radius: radius, orbitLine: line,
+        sysGroup: null, sysOuter: 0, moonScale: 1
     };
+});
+
+// ---------- moons ----------
+// Real moon orbits would sit inside the exaggerated planet spheres, so each
+// system's orbit *distances* are scaled up by a shared factor (ratios between
+// a planet's moons are preserved). Real values are shown in the info panel.
+moons = O.MOONS.map(m => {
+    const par = planets.find(p => p.name === m.parent);
+    if (!par.sysGroup) {
+        const innermost = Math.min(...O.MOONS.filter(x => x.parent === m.parent).map(x => x.a));
+        par.moonScale = Math.max(1, (par.radius * 2.0) / innermost);
+        par.sysGroup = new THREE.Group();
+        par.group.add(par.sysGroup);
+    }
+    const F = par.moonScale;
+    const radius = par.radius * m.size;
+
+    const moonGroup = new THREE.Group();
+    const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(radius, 16, 10),
+        new THREE.MeshLambertMaterial({ color: m.color })
+    );
+    moonGroup.add(mesh);
+    const glow = spriteOf(texSoftGlow, m.color, false);
+    moonGroup.add(glow);
+
+    const div = document.createElement('div');
+    div.className = 'obj-label moon-label';
+    div.textContent = m.name;
+    const label = new CSS2DObject(div);
+    label.position.set(0, radius * 2.2, 0);
+    moonGroup.add(label);
+    par.sysGroup.add(moonGroup);
+
+    // orbit ring around the parent (display-scaled)
+    const path = O.orbitPath(O.smallBodyElements(m, jdBoot), 128)
+        .map(q => ev({ x: q.x * F, y: q.y * F, z: q.z * F }));
+    const ring = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(path),
+        new THREE.LineBasicMaterial({ color: m.color, transparent: true, opacity: 0.35 })
+    );
+    par.sysGroup.add(ring);
+
+    const rec = {
+        kind: 'moon', name: m.name, color: m.color, ref: m, parentRec: par,
+        neo: false, pha: false, cls: '', _key: 'mo-' + m.name,
+        group: moonGroup, glow: glow, radius: radius
+    };
+    par.sysOuter = Math.max(par.sysOuter, m.a * F * 1.1);
+    return rec;
 });
 
 // ---------- asteroid point cloud ----------
@@ -227,12 +285,13 @@ function rebuildAsteroids() {
         astPoints.geometry.dispose();
         astPoints.material.dispose();
     }
-    const n = bodies.length;
+    pointBodies = bodies.filter(b => vis[catOf(b)]);
+    const n = pointBodies.length;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
     const colors = new Float32Array(n * 3);
     const c = new THREE.Color();
-    bodies.forEach((b, k) => {
+    pointBodies.forEach((b, k) => {
         c.set(bodyColor(b));
         colors.set([c.r, c.g, c.b], k * 3);
     });
@@ -280,7 +339,7 @@ function disposeLine(l) {
 function setSelOrbit(b) {
     disposeLine(selOrbitLine);
     selOrbitLine = null;
-    if (b && b.kind !== 'planet') {
+    if (b && b.kind === 'small') {
         selOrbitLine = orbitLine(b, 0.9);
         scene.add(selOrbitLine);
     }
@@ -289,7 +348,7 @@ function setSelOrbit(b) {
 function setHovOrbit(b) {
     disposeLine(hovOrbitLine);
     hovOrbitLine = null;
-    if (b && b !== selected && b.kind !== 'planet') {
+    if (b && b !== selected && b.kind === 'small') {
         hovOrbitLine = orbitLine(b, 0.4);
         scene.add(hovOrbitLine);
     }
@@ -338,7 +397,7 @@ function updateClock() {
 // object helpers
 // =====================================================================
 function bodyColor(b) {
-    if (b.kind === 'planet') return b.color;
+    if (b.kind === 'planet' || b.kind === 'moon') return b.color;
     if (D.isComet(b)) return COLORS.comet;
     if (b.pha) return COLORS.pha;
     if (b.neo) return COLORS.neo;
@@ -347,10 +406,20 @@ function bodyColor(b) {
 
 function bodyTag(b) {
     if (b.kind === 'planet') return 'PLANET';
+    if (b.kind === 'moon') return 'MOON';
     if (D.isComet(b)) return 'COMET';
     if (b.pha) return 'PHA';
     if (b.neo) return 'NEO';
     return 'AST';
+}
+
+// legend-toggle category of a body
+function catOf(b) {
+    if (b.kind === 'planet') return 'planet';
+    if (b.kind === 'moon') return 'moon';
+    if (D.isComet(b)) return 'comet';
+    if (b.pha) return 'pha';
+    return 'ast';
 }
 
 function computePos(b, jd) {
@@ -363,8 +432,9 @@ function computePos(b, jd) {
 const _v = new THREE.Vector3();
 
 function screenPos(b) {
-    if (!b._pos) return null;
-    ev(b._pos, _v).project(camera);
+    const p = b._disp || b._pos;                     // _disp = display position (moons)
+    if (!p) return null;
+    ev(p, _v).project(camera);
     if (_v.z > 1) return null;                       // behind camera
     return { x: (_v.x + 1) / 2 * W, y: (1 - _v.y) / 2 * H };
 }
@@ -377,8 +447,9 @@ function pick(mx, my) {
         const d = Math.hypot(s.x - mx, s.y - my) - bonus;
         if (d < bestD) { bestD = d; best = b; }
     };
-    for (const b of bodies) consider(b, 0);
-    for (const p of planets) consider(p, 5);
+    for (const b of pointBodies) consider(b, 0);
+    if (vis.moon) for (const m of moons) { if (m._shown) consider(m, 2); }
+    if (vis.planet) for (const p of planets) consider(p, 5);
     return best;
 }
 
@@ -399,8 +470,8 @@ function select(b, center) {
     following = !!b && center !== false;
     setSelOrbit(b);
     marker.visible = !!b;
-    selLabel.visible = !!b && b.kind !== 'planet';
-    if (b && b.kind !== 'planet') selLabelDiv.textContent = b.name;
+    selLabel.visible = !!b && b.kind === 'small';
+    if (b && b.kind === 'small') selLabelDiv.textContent = b.name;
     document.querySelectorAll('#object-list li').forEach(li => {
         li.classList.toggle('selected', !!b && li.dataset.key === b._key);
     });
@@ -428,6 +499,36 @@ function renderInfo() {
     const r = Math.hypot(pos.x, pos.y, pos.z);
     const earth = planets[2]._pos || computePos(planets[2], jd);
     const dE = Math.hypot(pos.x - earth.x, pos.y - earth.y, pos.z - earth.z);
+
+    if (b.kind === 'moon') {
+        const m = b.ref;
+        const aKm = m.a * AU_KM;
+        const vKms = 2 * Math.PI * aKm / (m.per * 86400);
+        elInfo.innerHTML = `
+            <div class="info-head">
+                <h2 style="color:${b.color}">${b.name}</h2>
+                <div class="chips">
+                    <span class="chip" style="border-color:${b.color};color:${b.color}">MOON</span>
+                    <span class="chip">of ${m.parent}</span>
+                </div>
+            </div>
+            <div class="irow"><span>Orbits ${m.parent} at</span><b>${Math.round(aKm).toLocaleString()} km</b></div>
+            <div class="irow"><span>Orbital period</span><b>${m.per < 2 ? (m.per * 24).toFixed(1) + ' h' : m.per.toFixed(2) + ' days'}</b></div>
+            <div class="irow"><span>Orbital speed</span><b>${vKms.toFixed(2)} km/s</b></div>
+            <div class="irow"><span>Eccentricity</span><b>${m.e.toFixed(4)}</b></div>
+            <div class="irow"><span>Inclination (ecliptic)</span><b>${m.i.toFixed(1)}°${m.i > 90 ? ' <i>retrograde</i>' : ''}</b></div>
+            <div class="irow"><span>Distance from Sun</span><b>${r.toFixed(3)} AU</b></div>
+            ${m.parent !== 'Earth' ? `<div class="irow"><span>Distance from Earth</span><b>${dE.toFixed(3)} AU</b></div>` : ''}
+            <div class="irow"><span>Display note</span><b><i>orbit distance shown ×${Math.round(b.parentRec.moonScale)} for visibility</i></b></div>
+            <div class="info-actions">
+                <button id="btn-follow" class="${following ? 'on' : ''}">${following ? '◉ Following' : '○ Follow'}</button>
+                <button id="btn-deselect">✕ Clear</button>
+            </div>`;
+        document.getElementById('btn-follow').onclick = () => { following = !following; renderInfo(); };
+        document.getElementById('btn-deselect').onclick = () => select(null);
+        return;
+    }
+
     const a = b.kind === 'planet' ? O.planetElements(b.ref, jd).a : b.a;
     const e = b.kind === 'planet' ? O.planetElements(b.ref, jd).e : b.e;
     const inc = b.kind === 'planet' ? O.planetElements(b.ref, jd).i * 180 / Math.PI : b.i;
@@ -477,15 +578,16 @@ function renderInfo() {
 function matchesFilter(b) {
     switch (filterMode) {
         case 'planet': return b.kind === 'planet';
-        case 'neo': return b.kind !== 'planet' && b.neo;
-        case 'pha': return b.kind !== 'planet' && b.pha;
-        case 'comet': return b.kind !== 'planet' && D.isComet(b);
+        case 'moon': return b.kind === 'moon';
+        case 'neo': return b.kind === 'small' && b.neo;
+        case 'pha': return b.kind === 'small' && b.pha;
+        case 'comet': return b.kind === 'small' && D.isComet(b);
         default: return true;
     }
 }
 
 function buildList() {
-    const all = planets.concat(bodies);
+    const all = planets.concat(moons, bodies);
     elList.innerHTML = '';
     const frag = document.createDocumentFragment();
     for (const b of all) {
@@ -494,6 +596,15 @@ function buildList() {
         li.innerHTML = `<i class="dot" style="background:${bodyColor(b)}"></i><span class="oname">${b.name}</span><span class="otag">${bodyTag(b)}</span>`;
         li.onclick = () => {
             select(b);
+            // moons are tiny: jump the camera into their system
+            if (b.kind === 'moon') {
+                const jd = simJd();
+                b.parentRec._pos = computePos(b.parentRec, jd);
+                const t = ev(b.parentRec._pos, new THREE.Vector3());
+                const dir = camera.position.clone().sub(controls.target).normalize();
+                controls.target.copy(t);
+                camera.position.copy(t).add(dir.multiplyScalar(Math.max(b.parentRec.sysOuter * 3.2, 0.03)));
+            }
             document.body.classList.remove('show-left');
         };
         b._li = li;
@@ -507,7 +618,7 @@ function buildList() {
 function applyListFilter() {
     const q = elSearch.value.trim().toLowerCase();
     let shown = 0;
-    for (const b of planets.concat(bodies)) {
+    for (const b of planets.concat(moons, bodies)) {
         const ok = matchesFilter(b) && (!q || b.name.toLowerCase().includes(q) || (b.full || '').toLowerCase().includes(q));
         b._li.style.display = ok ? '' : 'none';
         if (ok) shown++;
@@ -543,6 +654,13 @@ function renderCad() {
                     toast('Could not load orbit for ' + label);
                     return;
                 }
+            }
+            const cat = catOf(b);
+            if (!vis[cat]) {
+                vis[cat] = true;
+                const btn = document.querySelector(`.leg-toggle[data-cat="${cat}"]`);
+                if (btn) btn.classList.remove('off');
+                rebuildAsteroids();
             }
             select(b);
         };
@@ -617,6 +735,30 @@ function bindInput() {
     document.getElementById('zoom-out').onclick = () => dolly(1.6);
     document.getElementById('zoom-reset').onclick = resetView;
 
+    // legend category toggles
+    document.querySelectorAll('.leg-toggle').forEach(btn => {
+        btn.onclick = () => {
+            const cat = btn.dataset.cat;
+            vis[cat] = !vis[cat];
+            btn.classList.toggle('off', !vis[cat]);
+            if (cat === 'grid') {
+                gridObjects.forEach(o => { o.visible = vis.grid; });
+            } else if (cat === 'planet') {
+                planets.forEach(p => {
+                    p.group.visible = vis.planet;
+                    p.orbitLine.visible = vis.planet;
+                });
+            } else if (cat === 'moon') {
+                // applied per-frame via the proximity rule
+            } else {
+                rebuildAsteroids();
+            }
+            if (selected && !vis[catOf(selected)]) select(null);
+            if (selected && selected.kind === 'moon' && !vis.planet) select(null);
+            if (hovered && !vis[catOf(hovered)]) { hovered = null; setHovOrbit(null); showTooltip(null); }
+        };
+    });
+
     elSearch.addEventListener('input', applyListFilter);
     document.querySelectorAll('.ftab').forEach(t => {
         t.onclick = () => {
@@ -670,8 +812,11 @@ async function loadData() {
         const m = location.hash.match(/^#sel=(.+)$/);
         if (m) {
             const want = decodeURIComponent(m[1]).toLowerCase();
-            const hit = planets.concat(bodies).find(b => b.name.toLowerCase() === want);
-            if (hit) select(hit);
+            const hit = planets.concat(moons, bodies).find(b => b.name.toLowerCase() === want);
+            if (hit) {
+                if (hit._li) hit._li.click();        // moons also get the camera jump
+                else select(hit);
+            }
         }
     } catch (err) {
         console.error('NEO load failed', err);
@@ -722,11 +867,32 @@ function step(now) {
         p.glow.scale.setScalar(Math.max(p.radius * 3.5, d * 0.018));
     }
 
+    // moons (positions relative to parent; orbit distances display-scaled)
+    for (const p of planets) {
+        if (!p.sysGroup) continue;
+        const dPar = camera.position.distanceTo(p.group.position);
+        const inSystem = selected && selected.kind === 'moon' && selected.parentRec === p;
+        p.sysGroup.visible = vis.moon && vis.planet && (dPar < p.sysOuter * 22 || inSystem);
+    }
+    for (const m of moons) {
+        const par = m.parentRec;
+        const off = O.smallBodyPos(m.ref, jd);          // real offset in AU
+        const F = par.moonScale;
+        m._pos = { x: par._pos.x + off.x, y: par._pos.y + off.y, z: par._pos.z + off.z };
+        m._disp = { x: par._pos.x + off.x * F, y: par._pos.y + off.y * F, z: par._pos.z + off.z * F };
+        m._shown = par.sysGroup.visible;
+        if (m._shown) {
+            m.group.position.set(off.x * F, off.z * F, -off.y * F);
+            const d = camera.position.distanceTo(m.group.getWorldPosition(_w));
+            m.glow.scale.setScalar(Math.max(m.radius * 2.5, d * 0.006));
+        }
+    }
+
     // asteroids
     if (astPoints) {
         const arr = astPoints.geometry.attributes.position.array;
-        for (let k = 0; k < bodies.length; k++) {
-            const b = bodies[k];
+        for (let k = 0; k < pointBodies.length; k++) {
+            const b = pointBodies[k];
             b._pos = computePos(b, jd);
             arr[k * 3] = b._pos.x;
             arr[k * 3 + 1] = b._pos.z;
@@ -737,8 +903,8 @@ function step(now) {
     }
 
     // selection visuals
-    if (selected && selected._pos) {
-        ev(selected._pos, _w);
+    if (selected && (selected._disp || selected._pos)) {
+        ev(selected._disp || selected._pos, _w);
         marker.position.copy(_w);
         const pulse = 1 + 0.18 * Math.sin(now / 280);
         marker.scale.setScalar(Math.max(0.012, camDist * 0.028) * pulse);
@@ -750,8 +916,8 @@ function step(now) {
         }
     }
 
-    if (hovered && hovered._pos && hovered !== selected) {
-        ev(hovered._pos, hoverGlow.position);
+    if (hovered && (hovered._disp || hovered._pos) && hovered !== selected) {
+        ev(hovered._disp || hovered._pos, hoverGlow.position);
         hoverGlow.material.color.set(bodyColor(hovered));
         hoverGlow.scale.setScalar(camDist * 0.02);
         hoverGlow.visible = true;
@@ -783,6 +949,6 @@ requestAnimationFrame(frame);
 // debug handle
 window.__orrery = {
     camera: camera, controls: controls, time: time, select: select,
-    renderer: renderer, scene: scene, step: step,
+    renderer: renderer, scene: scene, step: step, vis: vis, moons: moons,
     get bodies() { return bodies; }, get selected() { return selected; }
 };

@@ -5,6 +5,8 @@ A single-page, real-time **3D** map of the solar system (Three.js via CDN, no bu
 ## Features
 - **Full 3D scene**: orbit the camera around the Sun (drag), zoom (scroll/pinch), lit planet spheres with Saturn's ring, glow sprites, starfield, 3D orbit trajectories. Falls back to reduced quality on machines without GPU acceleration.
 - **Planets Mercury → Pluto** positioned in real time from JPL Keplerian elements (valid 1800–2050), no API needed.
+- **14 major moons** (Moon, Phobos/Deimos, the Galileans, Enceladus/Rhea/Titan, Miranda/Titania, Triton, Charon) on real JPL Horizons osculating elements; orbit distances are display-scaled per system (real values in the info panel). Zoom toward a planet to reveal its moons.
+- **Visibility toggles**: click the legend chips to show/hide planets, moons, asteroids, PHAs, comets and the AU grid.
 - **~400 near-Earth asteroids & comets** loaded live from the [NASA JPL Small-Body Database](https://ssd-api.jpl.nasa.gov/) (no API key required) and propagated client-side with a Kepler solver.
 - **Live close-approach feed** from the CNEOS CAD API (objects passing within 0.05 AU of Earth in the next 45 days), refreshed every 10 minutes. Clicking a row lazy-loads that object's orbit.
 - **Click any object** to see its full trajectory, distance from Sun/Earth, speed, orbital elements and next close approach.
