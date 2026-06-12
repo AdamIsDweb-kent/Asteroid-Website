@@ -9,7 +9,7 @@
 window.DATA = (function () {
     'use strict';
 
-    const API_KEY = 'DEMO_KEY';
+    const API_KEY = 'gmkscqdwKxOhtZwF8ElzxyXJ5SPWiYt5qhVdyUCO';
     const NEOWS = 'https://api.nasa.gov/neo/rest/v1';
     const BROWSE_PAGES = 4;                    // 4 pages × 20 objects
     const ORBIT_CACHE_MS = 24 * 3600 * 1000;
