@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORRERY — Live Solar System &amp; Asteroid Tracker</title>
+<meta name="description" content="Live map of the solar system: planets, near-Earth asteroids and comets with real orbital trajectories, powered by NASA/JPL data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>☄️</text></svg>">
+</head>
+<body>
+
+<canvas id="space"></canvas>
+
+<!-- ============ TOP BAR ============ -->
+<header id="topbar">
+    <div class="brand">
+        <span class="brand-icon">☄</span>
+        <div class="brand-text">
+            <b>ORRERY</b>
+            <span>live solar-system tracker</span>
+        </div>
+    </div>
+
+    <div id="clock">
+        <span id="sim-date">—</span>
+        <span id="live-badge" class="live">● LIVE</span>
+    </div>
+
+    <div id="time-controls">
+        <button class="tc-btn" data-rate="-604800" title="Rewind: 1 week per second">⏪</button>
+        <button class="tc-btn" data-rate="-86400" title="Rewind: 1 day per second">◀</button>
+        <button class="tc-btn" data-rate="0" title="Pause">⏸</button>
+        <button class="tc-btn live-btn active" data-rate="live" title="Real time">LIVE</button>
+        <button class="tc-btn" data-rate="86400" title="Forward: 1 day per second">▶</button>
+        <button class="tc-btn" data-rate="604800" title="Forward: 1 week per second">⏩</button>
+        <button class="tc-btn now-btn" id="btn-now" title="Jump back to the present">NOW</button>
+    </div>
+</header>
+
+<!-- ============ LEFT PANEL: object browser ============ -->
+<aside id="left-panel" class="panel">
+    <div class="panel-head">
+        <h2>Objects <span id="obj-count" class="count-chip">…</span></h2>
+    </div>
+    <input type="search" id="search" placeholder="Search planets &amp; asteroids…" autocomplete="off">
+    <div id="filter-tabs">
+        <button class="ftab active" data-filter="all">All</button>
+        <button class="ftab" data-filter="planet">Planets</button>
+        <button class="ftab" data-filter="neo">NEOs</button>
+        <button class="ftab" data-filter="pha">⚠ PHAs</button>
+        <button class="ftab" data-filter="comet">Comets</button>
+    </div>
+    <ul id="object-list"></ul>
+</aside>
+
+<!-- ============ RIGHT PANEL: selection info + close approaches ============ -->
+<aside id="right-panel" class="panel">
+    <div id="info-card">
+        <p class="info-hint">Click any object on the map<br>or in the list to inspect its trajectory.</p>
+    </div>
+
+    <div id="cad-card">
+        <div class="panel-head">
+            <h2>Close approaches</h2>
+            <span class="count-chip" id="cad-window">next 7 d</span>
+        </div>
+        <p class="cad-sub">Asteroids passing within 0.05 AU (~19.5 lunar distances) of Earth. Live from NASA NeoWs.</p>
+        <ul id="cad-list"><li class="cad-loading">Loading feed…</li></ul>
+    </div>
+</aside>
+
+<!-- mobile panel toggles -->
+<div id="mobile-toggles">
+    <button id="mt-left">☰ Objects</button>
+    <button id="mt-right">ⓘ Info</button>
+</div>
+
+<!-- view controls -->
+<div id="view-controls">
+    <button id="zoom-in" title="Zoom in">＋</button>
+    <button id="zoom-out" title="Zoom out">－</button>
+    <button id="zoom-reset" title="Reset view">⌖</button>
+</div>
+
+<footer id="legend">
+    <span><i class="dot dot-planet"></i>Planet</span>
+    <span><i class="dot dot-neo"></i>Near-Earth asteroid</span>
+    <span><i class="dot dot-pha"></i>Potentially hazardous</span>
+    <span><i class="dot dot-comet"></i>Comet</span>
+    <span class="credit">Data: NASA NeoWs / JPL · positions propagated live</span>
+</footer>
+
+<div id="tooltip"></div>
+<div id="status-toast"></div>
+
+<script src="orbits.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
