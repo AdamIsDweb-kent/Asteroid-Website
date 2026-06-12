@@ -18,19 +18,20 @@ window.DATA = (function () {
     const COMET_CLASSES = { HTC: 1, JFC: 1, JFc: 1, COM: 1, CTc: 1, ETc: 1, PAR: 1, HYP: 1 };
 
     /* Famous objects always included, and used alone if the API is
-       unreachable (elements approximate — labelled in the UI). */
+       unreachable. Osculating elements from JPL SBDB (solution epochs as
+       listed; fetched 2026-06-12). */
     const FALLBACK = [
-        { pdes: '1',      name: 'Ceres',    a: 2.767, e: 0.0789, i: 10.587, om: 80.3,  w: 73.6,  ma: 95,  epoch: 2461000.5, per: 1682,  H: 3.34, neo: false, pha: false, cls: 'MBA' },
-        { pdes: '2',      name: 'Pallas',   a: 2.770, e: 0.2300, i: 34.93,  om: 172.9, w: 310.9, ma: 40,  epoch: 2461000.5, per: 1686,  H: 4.12, neo: false, pha: false, cls: 'MBA' },
-        { pdes: '4',      name: 'Vesta',    a: 2.362, e: 0.0894, i: 7.142,  om: 103.8, w: 151.2, ma: 200, epoch: 2461000.5, per: 1325,  H: 3.20, neo: false, pha: false, cls: 'MBA' },
-        { pdes: '433',    name: 'Eros',     a: 1.458, e: 0.2227, i: 10.83,  om: 304.3, w: 178.9, ma: 130, epoch: 2461000.5, per: 643,   H: 10.4, neo: true,  pha: false, cls: 'AMO' },
-        { pdes: '1566',   name: 'Icarus',   a: 1.078, e: 0.8270, i: 22.80,  om: 87.95, w: 31.4,  ma: 60,  epoch: 2461000.5, per: 409,   H: 16.3, neo: true,  pha: true,  cls: 'APO' },
-        { pdes: '3200',   name: 'Phaethon', a: 1.271, e: 0.8900, i: 22.26,  om: 265.2, w: 322.2, ma: 0,   epoch: 2461000.5, per: 524,   H: 14.3, neo: true,  pha: true,  cls: 'APO' },
-        { pdes: '25143',  name: 'Itokawa',  a: 1.324, e: 0.2800, i: 1.62,   om: 69.1,  w: 162.8, ma: 300, epoch: 2461000.5, per: 556,   H: 19.2, neo: true,  pha: false, cls: 'APO' },
-        { pdes: '99942',  name: 'Apophis',  a: 0.9224, e: 0.1914, i: 3.34,  om: 203.9, w: 126.7, ma: 280, epoch: 2461000.5, per: 323.6, H: 19.7, neo: true,  pha: true,  cls: 'ATE' },
-        { pdes: '101955', name: 'Bennu',    a: 1.1264, e: 0.2037, i: 6.035, om: 2.06,  w: 66.2,  ma: 100, epoch: 2461000.5, per: 436.6, H: 20.2, neo: true,  pha: true,  cls: 'APO' },
-        { pdes: '162173', name: 'Ryugu',    a: 1.1896, e: 0.1903, i: 5.88,  om: 251.6, w: 211.4, ma: 30,  epoch: 2461000.5, per: 474,   H: 19.2, neo: true,  pha: true,  cls: 'APO' },
-        { pdes: '1P',     name: 'Halley',   a: 17.93,  e: 0.967,  i: 162.19, om: 59.07, w: 112.26, ma: 190, epoch: 2461000.5, per: 27510, H: null, neo: true, pha: false, cls: 'HTC' }
+        { pdes: '1',      name: 'Ceres',    a: 2.7655526, e: 0.0796923, i: 10.58803, om: 80.24863, w: 73.29421, ma: 274.41935, epoch: 2461200.5, per: 1679.8531, H: 3.34, neo: false, pha: false, cls: 'MBA' },
+        { pdes: '2',      name: 'Pallas',   a: 2.7695590, e: 0.2307001, i: 34.93279, om: 172.88662, w: 310.96992, ma: 254.24965, epoch: 2461200.5, per: 1683.5048, H: 4.12, neo: false, pha: false, cls: 'MBA' },
+        { pdes: '4',      name: 'Vesta',    a: 2.3613660, e: 0.0902037, i: 7.14393, om: 103.70129, w: 151.46865, ma: 81.19016, epoch: 2461200.5, per: 1325.3890, H: 3.25, neo: false, pha: false, cls: 'MBA' },
+        { pdes: '433',    name: 'Eros',     a: 1.4582437, e: 0.2228780, i: 10.82854, om: 304.26797, w: 178.91813, ma: 62.51146, epoch: 2461200.5, per: 643.1964, H: 10.40, neo: true, pha: false, cls: 'AMO' },
+        { pdes: '1566',   name: 'Icarus',   a: 1.0779942, e: 0.8270189, i: 22.80164, om: 87.94856, w: 31.44439, ma: 329.18266, epoch: 2461200.5, per: 408.8115, H: 16.53, neo: true, pha: true, cls: 'APO' },
+        { pdes: '3200',   name: 'Phaethon', a: 1.2714646, e: 0.8896723, i: 22.31053, om: 265.09881, w: 322.30017, ma: 301.48582, epoch: 2461200.5, per: 523.6666, H: 14.38, neo: true, pha: true, cls: 'APO' },
+        { pdes: '25143',  name: 'Itokawa',  a: 1.3240523, e: 0.2801776, i: 1.62094, om: 69.07450, w: 162.84090, ma: 170.65391, epoch: 2461200.5, per: 556.4884, H: 19.26, neo: true, pha: false, cls: 'APO' },
+        { pdes: '99942',  name: 'Apophis',  a: 0.9223592, e: 0.1911492, i: 3.34100, om: 203.89365, w: 126.67957, ma: 175.33040, epoch: 2461200.5, per: 323.5553, H: 19.09, neo: true, pha: true, cls: 'ATE' },
+        { pdes: '101955', name: 'Bennu',    a: 1.1263910, e: 0.2037451, i: 6.03494, om: 2.06087, w: 66.22306, ma: 101.70395, epoch: 2455562.5, per: 436.6487, H: 20.21, neo: true, pha: true, cls: 'APO' },
+        { pdes: '162173', name: 'Ryugu',    a: 1.1909189, e: 0.1910730, i: 5.86644, om: 251.28971, w: 211.60899, ma: 62.34067, epoch: 2461200.5, per: 474.7027, H: 19.55, neo: true, pha: true, cls: 'APO' },
+        { pdes: '1P',     name: 'Halley',   a: 17.9286350, e: 0.9679360, i: 162.19053, om: 59.09895, w: 112.24143, ma: 274.38234, epoch: 2439875.5, per: 27728.0461, H: null, neo: true, pha: false, cls: 'HTC' }
     ];
 
     // ---------- tiny localStorage cache ----------
