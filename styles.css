@@ -554,6 +554,36 @@ html, body {
 
 #mobile-toggles { display: none; }
 
+/* ============ 3D label overlay (CSS2DRenderer) ============ */
+#labels {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+#labels * { pointer-events: none; }
+
+.obj-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(220, 232, 255, 0.78);
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+}
+
+.sel-label {
+    color: var(--accent);
+    text-shadow: 0 0 8px rgba(110, 231, 255, 0.6), 0 0 6px rgba(0, 0, 0, 0.9);
+}
+
+.ring-label {
+    font-size: 9.5px;
+    color: rgba(160, 200, 230, 0.30);
+    white-space: nowrap;
+}
+
 /* scrollbars */
 #object-list::-webkit-scrollbar,
 #right-panel::-webkit-scrollbar { width: 7px; }
